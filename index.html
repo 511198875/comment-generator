@@ -278,7 +278,7 @@ let editingProduct = null; // modal form state
 
 // Product data model: [{id, name, category, features:[], price, competitors:[{id,name,category,features:[],price}]}]
 
-function rand(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function rand(arr) { return arr.length ? arr[Math.floor(Math.random()*arr.length)] : ''; }
 function randInt(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
 
 // === Storage ===
@@ -658,7 +658,12 @@ function getProductInfo() {
   if (!pair) { showToast('请先选择一个产品'); return null; }
 
   const my = pair.myProduct;
-  const comp = pair.competitorInfo;
+  let comp = pair.competitorInfo;
+
+  // 没选具体竞品？从我品自己的竞品池里随机挑一个
+  if (!comp && my.competitors && my.competitors.length > 0) {
+    comp = my.competitors[Math.floor(Math.random() * my.competitors.length)];
+  }
 
   return {
     name: my.name,
@@ -1032,7 +1037,7 @@ function generateBili(info, idx) {
       `${me} ${them} ${priceLine} up最推荐哪一款 ${useScene}`,
       `在${me}和${them}之间纠结 ${priceLine} ${useScene} 求真实建议`,
       `${me}和${them}怎么选 ${a.hotPick}这个我比较看重 ${useScene}`,
-      `${me}的${a.keyDiff}和${them}的${info.compFeatures?rand(info.compFeatures):'参数'} 怎么取舍 ${useScene}`,
+      `${me}的${a.keyDiff}和${them}的${(info.compFeatures&&info.compFeatures.length)?rand(info.compFeatures):'配置'} 怎么取舍 ${useScene}`,
     ]);
   }
 
