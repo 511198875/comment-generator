@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>口碑评论生成器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f5f5;color:#333;min-height:100vh}
+.container{max-width:900px;margin:0 auto;padding:20px}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+h1{font-size:20px;font-weight:600}
+.header-actions{display:flex;gap:8px}
+
+/* Buttons */
+.btn{padding:7px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:#4f46e5;color:#fff}
+.btn-primary:hover{background:#4338ca}
+.btn-outline{border:1px solid #d0d0d0;background:#fff;color:#555}
+.btn-outline:hover{background:#f5f5f5}
+.btn-danger{background:#fff;color:#e53e3e;border:1px solid #fecaca}
+.btn-danger:hover{background:#fef2f2}
+
+/* Product select bar */
+.select-bar{background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,0.06);margin-bottom:16px}
+.select-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.select-label{font-size:13px;font-weight:500;color:#888;white-space:nowrap}
+.product-chips{display:flex;gap:8px;flex-wrap:wrap}
+.product-chip{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:2px solid #e0e0e0;background:#fff;color:#555;transition:all .2s}
+.product-chip:hover{border-color:#bbb;color:#333}
+.product-chip.mine.selected{border-color:#4f46e5;background:#f0efff;color:#4f46e5}
+.product-chip.comp.selected{border-color:#f59e0b;background:#fff7e6;color:#b45309}
+.product-chip .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.product-chip.mine .dot{background:#4f46e5}
+.product-chip.comp .dot{background:#f59e0b}
+.product-chip .type-tag{font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px}
+.product-chip.mine .type-tag{background:#f0efff;color:#4f46e5}
+.product-chip.comp .type-tag{background:#fff7e6;color:#b45309}
+.no-product{font-size:13px;color:#bbb}
+
+/* Controls row */
+.controls-row{display:flex;align-items:center;gap:20px;margin-bottom:16px;flex-wrap:wrap}
+
+/* Tone slider */
+.tone-group{display:flex;align-items:center;gap:8px;flex:1;min-width:200px}
+.tone-label{font-size:12px;color:#999;white-space:nowrap}
+.tone-slider-wrap{position:relative;flex:1}
+.tone-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:linear-gradient(to right,#ff6b6b 0%,#ffa502 33%,#7c5ce7 67%,#2c3e50 100%);outline:none;cursor:pointer}
+.tone-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid #4f46e5;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15)}
+.tone-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid #4f46e5;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15)}
+.tone-ends{display:flex;justify-content:space-between;font-size:10px;color:#bbb;padding:0 2px;margin-top:2px}
+.tone-value{font-size:12px;font-weight:500;color:#4f46e5;white-space:nowrap;min-width:40px;text-align:center}
+
+/* Purchase toggle */
+.purchase-toggle{display:flex;align-items:center;gap:8px}
+.toggle-label{font-size:13px;color:#555;white-space:nowrap}
+.toggle-switch{display:flex;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0}
+.toggle-option{padding:6px 16px;font-size:13px;cursor:pointer;border:none;background:#fff;color:#999;transition:all .2s}
+.toggle-option:first-child{border-right:1px solid #e0e0e0}
+.toggle-option.active{background:#4f46e5;color:#fff}
+
+/* Platform buttons */
+.platform-btns{display:flex;gap:12px;margin-bottom:16px}
+.platform-btn{flex:1;padding:12px 0;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:2px solid transparent;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:6px;color:#fff}
+.platform-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.15)}
+.platform-btn:active{transform:translateY(0)}
+.btn-icon{font-size:16px}
+.bili-btn{background:linear-gradient(135deg,#fb7299,#e84c7a)}
+.bili-btn:hover{background:linear-gradient(135deg,#e84c7a,#d4366a)}
+.douyin-btn{background:linear-gradient(135deg,#1a1a2e,#000);border:2px solid #fe2c55}
+.douyin-btn:hover{border-color:#ff5c85;box-shadow:0 6px 20px rgba(254,44,85,0.3)}
+.xhs-btn{background:linear-gradient(135deg,#ff2442,#e0203a)}
+.xhs-btn:hover{background:linear-gradient(135deg,#e0203a,#c91c33)}
+
+.platform-badge{display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:500;margin-bottom:12px;color:#fff}
+.badge-bili{background:#fb7299}
+.badge-douyin{background:#1a1a2e;border:1px solid #fe2c55;color:#fe2c55}
+.badge-xhs{background:#ff2442}
+
+/* Result area */
+.result-area{background:#fff;border-radius:12px;padding:20px;min-height:300px;box-shadow:0 1px 3px rgba(0,0,0,0.06);margin-bottom:16px}
+.empty-state{text-align:center;padding:60px 20px;color:#bbb;font-size:14px}
+
+.actions-bar{display:flex;gap:8px;margin-bottom:16px}
+.btn-action{padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid #e0e0e0;background:#fff;color:#555;transition:all .2s}
+.btn-action:hover{background:#f5f5f5}
+
+/* Comment styles - B站 */
+.bili-comment{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #f0f0f0;align-items:flex-start}
+.bili-comment:last-child{border-bottom:none}
+.bili-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0;color:#fff}
+.bili-name{font-size:13px;color:#61666d;margin-bottom:2px}
+.bili-text{font-size:13px;color:#18191c;line-height:1.6}
+.bili-meta{font-size:11px;color:#9499a0;margin-top:4px;display:flex;gap:16px}
+
+/* Comment styles - 抖音 */
+.douyin-comment{display:flex;gap:10px;padding:14px 0;border-bottom:1px solid #f0f0f0;align-items:flex-start}
+.douyin-comment:last-child{border-bottom:none}
+.douyin-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;color:#fff}
+.douyin-body{flex:1}
+.douyin-name{font-size:12px;color:#999;margin-bottom:2px}
+.douyin-text{font-size:14px;color:#333;line-height:1.5}
+.douyin-meta{font-size:11px;color:#bbb;margin-top:6px;display:flex;justify-content:space-between;align-items:center}
+.douyin-heart{font-size:14px;color:#ccc;cursor:pointer}
+
+/* Comment styles - 小红书 */
+.xhs-comment{padding:12px 0;border-bottom:1px solid #f5f5f5}
+.xhs-comment:last-child{border-bottom:none}
+.xhs-header{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.xhs-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0;color:#fff}
+.xhs-name{font-size:12px;color:#999}
+.xhs-text{font-size:14px;color:#333;line-height:1.7;padding-left:36px}
+.xhs-meta{font-size:11px;color:#bbb;margin-top:4px;padding-left:36px;display:flex;gap:12px}
+
+.comment-card-wrap{position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #e0e0e0;background:#fff;color:#999;cursor:pointer;opacity:0;transition:opacity .2s}
+.comment-card-wrap:hover .copy-btn{opacity:1}
+.copy-btn:hover{color:#4f46e5;border-color:#4f46e5}
+
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:16px;width:720px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #f0f0f0;position:sticky;top:0;background:#fff;z-index:1}
+.modal-title{font-size:16px;font-weight:600}
+.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:#f5f5f5;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#999;transition:all .2s}
+.modal-close:hover{background:#eee;color:#333}
+.modal-body{padding:24px}
+.modal-section{margin-bottom:24px}
+.modal-section-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.modal-section-title .dot{display:inline-block;width:8px;height:8px;border-radius:50%}
+
+.product-list{margin-bottom:16px}
+.product-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #eee;border-radius:8px;margin-bottom:8px;transition:all .2s}
+.product-item.mine{border-left:3px solid #4f46e5}
+.product-item.comp{border-left:3px solid #f59e0b}
+.product-item-content{flex:1}
+.product-item-name{font-size:14px;font-weight:500}
+.product-item-meta{font-size:11px;color:#999;margin-top:2px}
+.product-item-actions{display:flex;gap:4px}
+.btn-sm{padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid #e0e0e0;background:#fff;color:#666;transition:all .2s}
+.btn-sm:hover{background:#f5f5f5}
+.btn-sm.danger{color:#e53e3e;border-color:#fecaca}
+.btn-sm.danger:hover{background:#fef2f2}
+
+.add-product-btn{padding:10px 16px;border-radius:8px;border:2px dashed #d0d0d0;background:#fafafa;width:100%;text-align:center;font-size:13px;color:#999;cursor:pointer;transition:all .2s}
+.add-product-btn:hover{border-color:#4f46e5;color:#4f46e5;background:#f8f7ff}
+
+/* Product edit form (in modal) */
+.edit-form{background:#f9f9f9;border-radius:10px;padding:20px;margin-top:12px;display:none}
+.edit-form.show{display:block}
+.edit-form-title{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.edit-form-title .dot{display:inline-block;width:8px;height:8px;border-radius:50%}
+.form-row{display:flex;gap:10px;margin-bottom:10px}
+.form-row .form-g{flex:1}
+.form-g{margin-bottom:10px}
+.form-g label{display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#777}
+.form-g input,.form-g textarea{width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;outline:none}
+.form-g input:focus,.form-g textarea:focus{border-color:#4f46e5}
+.form-g textarea{resize:vertical;min-height:48px;font-family:inherit;font-size:12px}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+.add-separator{border-top:2px dashed #e0e0e0;margin:20px 0 12px}
+
+/* Info row showing selected product summary */
+.info-row{font-size:12px;color:#888;margin-top:8px;display:flex;gap:16px;flex-wrap:wrap}
+.info-row span{display:flex;align-items:center;gap:3px}
+
+@media(max-width:768px){
+  .controls-row{flex-direction:column;gap:12px}
+  .platform-btns{flex-direction:column;gap:8px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>口碑评论生成器</h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" onclick="openModal()">⚙ 管理产品</button>
+    </div>
+  </div>
+
+  <!-- 产品选择 -->
+  <div class="select-bar">
+    <div class="select-row">
+      <span class="select-label">当前产品：</span>
+      <div class="product-chips" id="productChips">
+        <span class="no-product">还没有产品，点击右上角「管理产品」添加</span>
+      </div>
+    </div>
+    <div class="info-row" id="infoRow" style="display:none"></div>
+  </div>
+
+  <!-- 控制区：语调 + 已购/未购 -->
+  <div class="controls-row">
+    <div class="tone-group">
+      <span class="tone-label">🗣 口语</span>
+      <div class="tone-slider-wrap">
+        <input type="range" class="tone-slider" id="toneSlider" min="0" max="100" value="50" oninput="updateTone()">
+        <div class="tone-ends">
+          <span>大白话</span><span>随性</span><span>偏专业</span><span>硬核评测</span>
+        </div>
+      </div>
+      <span class="tone-label">📊 专业</span>
+    </div>
+    <div class="purchase-toggle">
+      <span class="toggle-label">用户状态：</span>
+      <div class="toggle-switch" id="purchaseToggle">
+        <button class="toggle-option active" onclick="setPurchased('no')">🔍 未购</button>
+        <button class="toggle-option" onclick="setPurchased('yes')">✅ 已购</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 平台按钮 -->
+  <div class="platform-btns">
+    <button class="platform-btn bili-btn" onclick="generateFor('bili')">
+      <span class="btn-icon">📺</span>生成B站评论
+    </button>
+    <button class="platform-btn douyin-btn" onclick="generateFor('douyin')">
+      <span class="btn-icon">🎵</span>生成抖音评论
+    </button>
+    <button class="platform-btn xhs-btn" onclick="generateFor('xhs')">
+      <span class="btn-icon">📕</span>生成小红书评论
+    </button>
+  </div>
+
+  <!-- 结果区 -->
+  <div class="result-area" id="resultArea">
+    <div class="empty-state">添加产品 → 选择 → 调好语调和状态 → 点击平台按钮生成</div>
+  </div>
+
+  <div class="actions-bar" id="actionsBar" style="display:none">
+    <button class="btn-action" onclick="copyAll()">复制全部评论</button>
+    <button class="btn-action" onclick="generateFor(currentPlatform)">换一批</button>
+  </div>
+</div>
+
+<!-- 管理产品弹窗 -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">管理产品库</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <!-- 动态渲染 -->
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const AVATAR_COLORS = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ef4444','#14b8a6','#f97316','#64748b'];
+const NAMES_BILI = ['柚子酱','野生摄影师','打工仔小王','硬核测评','追剧狂魔','露营爱好者','数码迷','影迷老张','游戏宅','吃瓜群众','云玩家','技术流','电影收割机','宅家小能手','数码圈老司机'];
+const NAMES_DOUYIN = ['用户8372','小甜甜','快乐星球','大橙子','阿木','喵喵','老李说数码','追光者','周末露营','小鱼干','阿花','小李飞刀','看世界的眼','家电测评','光影猎人'];
+const NAMES_XHS = ['是橙子呀','小鹿爱家居','生活家Miya','宅家日记','露营少女','追剧的猫','设计师小Q','居家好物君','光影收藏家','周末玩家','好物种草','小确幸','理想家','森系生活','慢生活'];
+
+// State
+let currentPlatform = 'bili';
+let currentComments = [];
+let selectedProductId = null;
+let toneLevel = 50; // 0=口语, 100=专业
+let isPurchased = false; // false=未购, true=已购
+let editingProduct = null; // modal form state
+
+// Product data model: [{id, name, category, features:[], price, competitors:[{id,name,category,features:[],price}]}]
+
+function rand(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function randInt(a,b) { return Math.floor(Math.random()*(b-a+1))+a; }
+
+// === Storage ===
+function loadProducts() {
+  try { return JSON.parse(localStorage.getItem('comment_gen_products') || '[]'); }
+  catch(e) { return []; }
+}
+function saveProducts(products) { localStorage.setItem('comment_gen_products', JSON.stringify(products)); }
+
+// === Find product ===
+function findProduct(id) {
+  const products = loadProducts();
+  return products.find(p => p.id === id);
+}
+function getSelectedProduct() {
+  return selectedProductId ? findProduct(selectedProductId) : null;
+}
+
+// === Render product chips ===
+function renderProductChips() {
+  const products = loadProducts();
+  const chipsEl = document.getElementById('productChips');
+  const infoRow = document.getElementById('infoRow');
+
+  if (products.length === 0) {
+    chipsEl.innerHTML = '<span class="no-product">还没有产品，点击右上角「管理产品」添加</span>';
+    infoRow.style.display = 'none';
+    selectedProductId = null;
+    return;
+  }
+
+  let html = '';
+  products.forEach(p => {
+    const sel = p.id === selectedProductId ? ' selected' : '';
+    html += `<span class="product-chip mine${sel}" onclick="selectProduct('${p.id}')">
+      <span class="dot"></span>${p.name}<span class="type-tag">我品</span>
+    </span>`;
+    if (p.competitors) {
+      p.competitors.forEach(c => {
+        const cid = p.id + '__comp__' + c.id;
+        const sel2 = cid === selectedProductId ? ' selected' : '';
+        html += `<span class="product-chip comp${sel2}" onclick="selectProduct('${cid}')">
+          <span class="dot"></span>${c.name}<span class="type-tag">竞品</span>
+        </span>`;
+      });
+    }
+  });
+  chipsEl.innerHTML = html;
+  updateInfoRow();
+}
+
+function selectProduct(id) {
+  selectedProductId = id;
+  renderProductChips();
+}
+
+function updateInfoRow() {
+  const infoRow = document.getElementById('infoRow');
+  const p = getSelectedProductInfo(); // handles both mine and comp
+  if (!p) { infoRow.style.display = 'none'; return; }
+
+  const feats = p.features.length > 0 ? p.features.slice(0,3).join(' · ') + (p.features.length>3?' …':'') : '';
+  infoRow.style.display = 'flex';
+  infoRow.innerHTML = `
+    <span>📦 ${p.name}（${p.category||'未分类'}）</span>
+    ${p.price ? `<span>💰 ${p.price}</span>` : ''}
+    ${feats ? `<span>🎯 ${feats}</span>` : ''}
+  `;
+}
+
+// Get full product info, resolving "comp" references
+function getSelectedProductInfo() {
+  if (!selectedProductId) return null;
+  const products = loadProducts();
+  if (selectedProductId.includes('__comp__')) {
+    const [pid, cid] = selectedProductId.split('__comp__');
+    const parent = products.find(p => p.id === pid);
+    if (!parent) return null;
+    const comp = parent.competitors?.find(c => c.id === cid);
+    if (!comp) return null;
+    // Return comp with its parent for reference
+    return { ...comp, isCompetitor: true, parentProduct: parent };
+  }
+  return findProduct(selectedProductId);
+}
+
+// Get pair: my product + selected comp (if current is comp, then its parent is my product)
+function getProductPair() {
+  const info = getSelectedProductInfo();
+  if (!info) return null;
+  if (info.isCompetitor) {
+    return { myProduct: info.parentProduct, competitorInfo: info };
+  }
+  // Current is my product, find any competitor
+  return { myProduct: info, competitorInfo: null };
+}
+
+// === Tone ===
+function updateTone() {
+  toneLevel = parseInt(document.getElementById('toneSlider').value);
+}
+function setPurchased(val) {
+  isPurchased = val === 'yes';
+  document.querySelectorAll('#purchaseToggle .toggle-option').forEach((btn,i) => {
+    btn.classList.toggle('active', (i===0 && !isPurchased) || (i===1 && isPurchased));
+  });
+}
+
+// === Modal ===
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('show');
+  editingProduct = null;
+  renderModal();
+}
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('show');
+  editingProduct = null;
+  renderProductChips();
+}
+function renderModal() {
+  const products = loadProducts();
+  const body = document.getElementById('modalBody');
+
+  let html = '';
+
+  // ===== 我的产品 section =====
+  html += `<div class="modal-section">
+    <div class="modal-section-title"><span class="dot" style="background:#4f46e5"></span>我的产品</div>
+    <div class="product-list">`;
+
+  if (products.length === 0) {
+    html += '<div style="font-size:13px;color:#bbb;padding:10px 0">暂无产品，点击下方按钮添加</div>';
+  } else {
+    products.forEach(p => {
+      const feats = p.features.slice(0,3).join(' · ');
+      html += `<div class="product-item mine">
+        <div class="product-item-content">
+          <div class="product-item-name">${escHtml(p.name)} <span style="font-size:11px;color:#999">${p.category||''}</span></div>
+          <div class="product-item-meta">${escHtml(feats) || '无卖点'} · ${p.price||'无价格'}</div>
+        </div>
+        <div class="product-item-actions">
+          <button class="btn-sm" onclick="editProduct('${p.id}')">编辑</button>
+          <button class="btn-sm danger" onclick="deleteProduct('${p.id}')">删除</button>
+        </div>
+      </div>`;
+
+      // Competitors under this product
+      if (p.competitors && p.competitors.length > 0) {
+        p.competitors.forEach(c => {
+          const cfeats = (c.features||[]).slice(0,2).join(' · ');
+          html += `<div class="product-item comp" style="margin-left:20px">
+            <div class="product-item-content">
+              <div class="product-item-name">${escHtml(c.name)} <span style="font-size:11px;color:#999">竞品 · ${c.category||''}</span></div>
+              <div class="product-item-meta">${escHtml(cfeats) || '无卖点'} · ${c.price||'无价格'}</div>
+            </div>
+            <div class="product-item-actions">
+              <button class="btn-sm" onclick="editComp('${p.id}','${c.id}')">编辑</button>
+              <button class="btn-sm danger" onclick="deleteComp('${p.id}','${c.id}')">删除</button>
+            </div>
+          </div>`;
+        });
+      }
+
+      // Add competitor under this product
+      html += `<div style="margin:6px 0 2px 20px">
+        <button class="add-product-btn" style="width:auto;padding:5px 14px;border-color:#f59e0b;background:#fff7e6;color:#b45309;font-size:12px;font-weight:500;cursor:pointer" onclick="addComp('${p.id}')">⚔ 为「${escHtml(p.name)}」添加竞品</button>
+      </div>`;
+    });
+  }
+
+  html += `</div>
+    <div style="margin-top:12px">
+      <button class="add-product-btn" style="border-color:#4f46e5;background:#f0efff;color:#4f46e5;font-weight:600" onclick="editProduct('new')">＋ 添加我品</button>
+    </div>
+  </div>`;
+
+  // ===== Edit form =====
+  html += `<div class="edit-form" id="editForm">
+    <div class="edit-form-title" id="editFormTitle"><span class="dot" style="background:#4f46e5"></span>添加产品</div>
+    <div class="form-row">
+      <div class="form-g">
+        <label>产品名称</label>
+        <input type="text" id="editName" placeholder="产品名称">
+      </div>
+      <div class="form-g">
+        <label>品类</label>
+        <input type="text" id="editCategory" placeholder="如：投影仪">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-g">
+        <label>核心卖点（每行一个）</label>
+        <textarea id="editFeatures" placeholder="三色激光&#10;20000mAh内置电池&#10;1300CVIA亮度"></textarea>
+      </div>
+      <div class="form-g">
+        <label>价格区间</label>
+        <input type="text" id="editPrice" placeholder="如：4000-5000">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="cancelEdit()">取消</button>
+      <button class="btn btn-primary" onclick="saveEdit()">保存</button>
+    </div>
+  </div>`;
+
+  body.innerHTML = html;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function editProduct(id) {
+  editingProduct = { type: 'mine', parentId: null, id: id };
+  const form = document.getElementById('editForm');
+  const title = document.getElementById('editFormTitle');
+  title.innerHTML = `<span class="dot" style="background:#4f46e5"></span>` + (id === 'new' ? '添加我品' : '编辑我品');
+
+  if (id === 'new') {
+    document.getElementById('editName').value = '';
+    document.getElementById('editCategory').value = '';
+    document.getElementById('editFeatures').value = '';
+    document.getElementById('editPrice').value = '';
+  } else {
+    const p = findProduct(id);
+    if (!p) return;
+    document.getElementById('editName').value = p.name;
+    document.getElementById('editCategory').value = p.category || '';
+    document.getElementById('editFeatures').value = (p.features||[]).join('\n');
+    document.getElementById('editPrice').value = p.price || '';
+  }
+  form.classList.add('show');
+  form.scrollIntoView({behavior:'smooth'});
+}
+
+function deleteProduct(id) {
+  if (!confirm('确定删除这个产品及其所有竞品？')) return;
+  const products = loadProducts();
+  saveProducts(products.filter(p => p.id !== id));
+  if (selectedProductId === id || (selectedProductId||'').startsWith(id+'__comp__')) {
+    selectedProductId = null;
+  }
+  renderModal();
+  renderProductChips();
+  showToast('已删除');
+}
+
+function saveEdit() {
+  const name = document.getElementById('editName').value.trim();
+  const category = document.getElementById('editCategory').value.trim();
+  const features = document.getElementById('editFeatures').value.trim().split('\n').filter(f=>f.trim());
+  const price = document.getElementById('editPrice').value.trim();
+
+  if (!name) { showToast('请填写产品名称'); return; }
+
+  const products = loadProducts();
+  const ep = editingProduct;
+
+  if (ep.type === 'mine') {
+    if (ep.id === 'new') {
+      const newP = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, category, features, price, competitors:[] };
+      products.push(newP);
+      if (!selectedProductId) selectedProductId = newP.id;
+    } else {
+      const p = products.find(p => p.id === ep.id);
+      if (p) { p.name = name; p.category = category; p.features = features; p.price = price; }
+    }
+  } else if (ep.type === 'comp') {
+    const p = products.find(p => p.id === ep.parentId);
+    if (!p) return;
+    p.competitors = p.competitors || [];
+    if (ep.id === 'new') {
+      p.competitors.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, category, features, price });
+    } else {
+      const c = p.competitors.find(c => c.id === ep.id);
+      if (c) { c.name = name; c.category = category; c.features = features; c.price = price; }
+    }
+  }
+
+  saveProducts(products);
+  editingProduct = null;
+  document.getElementById('editForm').classList.remove('show');
+  renderModal();
+  renderProductChips();
+  showToast('已保存');
+}
+
+function cancelEdit() {
+  editingProduct = null;
+  document.getElementById('editForm').classList.remove('show');
+}
+
+// === CRUD: Competitors ===
+function addComp(parentId) {
+  editingProduct = { type: 'comp', parentId: parentId, id: 'new' };
+  const title = document.getElementById('editFormTitle');
+  title.innerHTML = '<span class="dot" style="background:#f59e0b"></span>添加竞品';
+  document.getElementById('editName').value = '';
+  document.getElementById('editCategory').value = '';
+  document.getElementById('editFeatures').value = '';
+  document.getElementById('editPrice').value = '';
+  document.getElementById('editForm').classList.add('show');
+  document.getElementById('editForm').scrollIntoView({behavior:'smooth'});
+}
+
+function editComp(parentId, compId) {
+  const parent = findProduct(parentId);
+  if (!parent) return;
+  const comp = parent.competitors?.find(c => c.id === compId);
+  if (!comp) return;
+  editingProduct = { type: 'comp', parentId: parentId, id: compId };
+  const title = document.getElementById('editFormTitle');
+  title.innerHTML = '<span class="dot" style="background:#f59e0b"></span>编辑竞品';
+  document.getElementById('editName').value = comp.name;
+  document.getElementById('editCategory').value = comp.category || '';
+  document.getElementById('editFeatures').value = (comp.features||[]).join('\n');
+  document.getElementById('editPrice').value = comp.price || '';
+  document.getElementById('editForm').classList.add('show');
+  document.getElementById('editForm').scrollIntoView({behavior:'smooth'});
+}
+
+function deleteComp(parentId, compId) {
+  if (!confirm('确定删除这个竞品？')) return;
+  const products = loadProducts();
+  const p = products.find(p => p.id === parentId);
+  if (!p) return;
+  p.competitors = (p.competitors||[]).filter(c => c.id !== compId);
+  saveProducts(products);
+  if (selectedProductId === parentId+'__comp__'+compId) selectedProductId = parentId;
+  renderModal();
+  renderProductChips();
+  showToast('已删除');
+}
+
+// === Generate ===
+function getProductInfo() {
+  const pair = getProductPair();
+  if (!pair) { showToast('请先选择一个产品'); return null; }
+
+  const my = pair.myProduct;
+  const comp = pair.competitorInfo;
+
+  return {
+    name: my.name,
+    category: my.category || '',
+    features: my.features || [],
+    price: my.price || '',
+    competitor: comp?.name || '',
+    compFeatures: comp?.features || [],
+    compPrice: comp?.price || ''
+  };
+}
+
+function generateFor(platform) {
+  currentPlatform = platform;
+  const info = getProductInfo();
+  if (!info) return;
+  const generators = { bili: generateBili, douyin: generateDouyin, xhs: generateXhs };
+  currentComments = [];
+  for (let i = 0; i < 10; i++) {
+    currentComments.push(generators[platform](info, i));
+  }
+  renderComments();
+  document.getElementById('actionsBar').style.display = 'flex';
+}
+
+// Tone helpers
+function isCasual() { return toneLevel < 35; }
+function isPro() { return toneLevel > 65; }
+
+// === 产品分析引擎：理解产品，不做关键词填坑 ===
+function analyzeProduct(info) {
+  const { name, category, features, price, competitor, compFeatures, compPrice } = info;
+  const featStr = features.map(f=>f.toLowerCase()).join(' ');
+
+  // 识别价格段
+  const p = parseInt(price) || 0;
+  let priceSegment = '中端';
+  if (p > 0 && p < 2000) priceSegment = '入门';
+  else if (p >= 2000 && p < 5000) priceSegment = '中端性价比';
+  else if (p >= 5000 && p < 10000) priceSegment = '中高端';
+  else if (p >= 10000) priceSegment = '旗舰';
+
+  // 识别品类场景
+  const isProjector = /投影/.test(category+name);
+  const isTV = /电视/.test(category+name);
+  const isAudio = /音响|音箱|耳机/.test(category+name);
+
+  // 找真正亮眼的差异化卖点（不是随便抽的）
+  let hotPick = '';
+  const hotCandidates = [];
+
+  // 亮度/画质类卖点在投影品类权重最高
+  if (isProjector) {
+    if (/cvia|ansi|流明|亮度|nit/i.test(featStr)) {
+      const bm = features.find(f=>/cvia|ansi|流明|亮度|nit/i.test(f));
+      if (bm) hotCandidates.push({ f: bm, w: 10 });
+    }
+    if (/激光|三色|光源|alpd/i.test(featStr)) {
+      const ls = features.find(f=>/激光|三色|光源|alpd/i.test(f));
+      if (ls) hotCandidates.push({ f: ls, w: 9 });
+    }
+    if (/4k|分辨率|1080|超清/i.test(featStr)) {
+      const res = features.find(f=>/4k|分辨率|1080|超清/i.test(f));
+      if (res) hotCandidates.push({ f: res, w: 7 });
+    }
+    if (/云台|支架|便携|自动对焦|梯形|校正|无感/i.test(featStr)) {
+      const pt = features.find(f=>/云台|支架|便携|自动对焦|梯形|校正|无感/i.test(f));
+      if (pt) hotCandidates.push({ f: pt, w: 8 });
+    }
+    if (/音响|哈曼|jbl|杜比|dolby|音质/i.test(featStr)) {
+      const au = features.find(f=>/音响|哈曼|jbl|杜比|dolby|音质/i.test(f));
+      if (au) hotCandidates.push({ f: au, w: 6 });
+    }
+    if (/护眼|低蓝光|莱茵|漫反射/i.test(featStr)) {
+      const eye = features.find(f=>/护眼|低蓝光|莱茵|漫反射/i.test(f));
+      if (eye) hotCandidates.push({ f: eye, w: 7 });
+    }
+    if (/游戏|延迟|低延迟|hdmi|memc/i.test(featStr)) {
+      const gm = features.find(f=>/游戏|延迟|低延迟|hdmi|memc/i.test(f));
+      if (gm) hotCandidates.push({ f: gm, w: 5 });
+    }
+  }
+
+  // 把没被上面规则覆盖的卖点加进去
+  const covered = new Set(hotCandidates.map(h=>h.f));
+  features.forEach(f => {
+    if (!covered.has(f)) hotCandidates.push({ f, w: 4 });
+  });
+
+  // 加权随机选核心卖点
+  const totalW = hotCandidates.reduce((s,c)=>s+c.w, 0);
+  let roll = Math.random() * totalW;
+  for (const c of hotCandidates) {
+    roll -= c.w;
+    if (roll <= 0) { hotPick = c.f; break; }
+  }
+  if (!hotPick && hotCandidates.length) hotPick = hotCandidates[0].f;
+
+  // 第二个卖点（排除hotPick再选）
+  const pool2 = hotCandidates.filter(c=>c.f!==hotPick);
+  const totalW2 = pool2.reduce((s,c)=>s+c.w, 0);
+  let roll2 = Math.random() * totalW2;
+  let hotPick2 = pool2.length ? pool2[0].f : '';
+  for (const c of pool2) {
+    roll2 -= c.w;
+    if (roll2 <= 0) { hotPick2 = c.f; break; }
+  }
+
+  // 与竞品的关键差异
+  const myUnique = features.filter(f => !compFeatures.some(cf => f.includes(cf) || cf.includes(f)));
+  const keyDiff = myUnique.length > 0 ? rand(myUnique) : hotPick;
+
+  // 可能的短板（增加真实感）
+  const weaknesses = [];
+  if (isProjector && !/4k/i.test(featStr) && p > 3000) weaknesses.push('纠结1080P还是4K的人要多考虑');
+  if (isProjector && !/cvia|ansi/i.test(featStr)) weaknesses.push('亮度参数没标清楚，白天能不能用是个问号');
+  if (isTV && /广告|开机广告/i.test(featStr)) weaknesses.push('开机有广告这个确实扣分');
+  if (p < 1500 && features.length <= 3) weaknesses.push('这个价位配置肯定会妥协一些');
+  const weakness = weaknesses.length > 0 ? rand(weaknesses) : '';
+
+  // 目标人群推断
+  let audience = '家庭/日常用户';
+  if (isProjector && /便携|云台|支架/i.test(featStr)) audience = '租房党/经常搬家';
+  if (isProjector && p < 2000) audience = '学生党/年轻租房族';
+  if (/护眼|小孩/i.test(featStr)) audience = '有小孩的家庭';
+  if (/游戏|延迟/i.test(featStr)) audience = '游戏玩家';
+  if (isAudio) audience = '音乐/影音爱好者';
+
+  return { hotPick, hotPick2, keyDiff, priceSegment, weakness, audience,
+    isProjector, isTV, isAudio };
+}
+
+// === 人设池 ===
+const PERSONA_BILI = [
+  { role:'参数小白', open:'有没有懂哥说下', ask:'不太懂参数 看着还行', style:'ask' },
+  { role:'参数党', open:'说句实话', ask:'这个参数在这个价位', style:'evaluate' },
+  { role:'对比狂人', open:'对比了五六款了', ask:'横向看了一圈', style:'compare' },
+  { role:'学生党', open:'学生党预算有限', ask:'这个性价比怎么样', style:'ask' },
+  { role:'老用户', open:'之前那台用了三年', ask:'换了新的说说感受', style:'share' },
+  { role:'给家人买', open:'给爸妈买的', ask:'他们不太会调参数 这个好上手不', style:'ask' },
+  { role:'客厅升级', open:'从电视转到投影', ask:'大屏体验确实不一样', style:'share' },
+  { role:'踩过坑', open:'之前被坑过一次 这次做了功课', ask:'到手了测测再说', style:'evaluate' },
+  { role:'纠结党', open:'纠结了好几天 最后还是下手了', ask:'希望别翻车', style:'share' },
+  { role:'购物节蹲守', open:'等618/双11', ask:'看这波能不能降', style:'ask' },
+  { role:'空间党', open:'我家客厅间距大概', ask:'这个距离投出来效果怎么样', style:'ask_dimension' },
+  { role:'画质控', open:'对画质有点要求 之前那台偏色严重', ask:'这台的色准和亮度能打不', style:'ask' },
+  { role:'带图党', open:'[图片]', ask:'投白墙就这样 还可以吧', style:'share' },
+  { role:'设备连接党', open:'主要是接', ask:'和switch/PS5玩游戏', style:'ask_device' },
+  { role:'预算党', open:'预算大概', ask:'这个价位有推荐不', style:'ask_budget' },
+  { role:'入门真香党', open:'入手了', ask:'可以说目前入门最香的了', style:'declare' },
+];
+
+const PERSONA_DOUYIN = [
+  { role:'果断党', open:'直接冲了', ask:'不纠结' },
+  { role:'上头党', open:'刷到就下单了', ask:'希望别翻车' },
+  { role:'对比党', open:'跟XXX对比了一下', ask:'果断选了这个' },
+  { role:'过来人', open:'用了告诉你', ask:'真香/真坑' },
+  { role:'实用派', open:'不整那些虚的', ask:'说大白话' },
+  { role:'场景党', open:'晚上窝沙发看', ask:'沉浸感拉满' },
+  { role:'吐槽帝', open:'说真的现在这些牌子', ask:'有的真是在割韭菜' },
+  { role:'价格党', open:'这个价位还要什么自行车', ask:'值不值自己看' },
+  { role:'纠结怪', open:'在几个之间反复横跳', ask:'最后选了它' },
+  { role:'打工人', open:'打工人犒劳自己', ask:'下班回家就想躺平看' },
+  { role:'宝妈', open:'买了给娃看动画', ask:'护眼很重要' },
+  { role:'游戏党', open:'打游戏延迟重要', ask:'实测延迟能接受' },
+];
+
+const PERSONA_XHS = [
+  { role:'种草到拔草', open:'被种草很久终于下手了', ask:'来说说真实感受' },
+  { role:'功课党', open:'做了一周功课才选的', ask:'选品思路分享' },
+  { role:'新手入门', open:'小白第一次买', ask:'需要姐妹们给建议' },
+  { role:'老手分享', open:'第N台了', ask:'这次确实不一样' },
+  { role:'装修党', open:'新家装修选了它', ask:'和整体风格很搭' },
+  { role:'太太视角', open:'老公选的', ask:'本来还不太放心' },
+  { role:'送礼视角', open:'送给朋友/爸妈的', ask:'他们反馈说' },
+  { role:'避坑党', open:'之前踩过坑的来避雷', ask:'这个目前没踩' },
+  { role:'独居女生', open:'一个人住', ask:'提升幸福感的好物' },
+  { role:'精致生活', open:'提升生活品质的小家电', ask:'每天都在用' },
+  { role:'犹豫派', open:'纠结要不要退', ask:'用了几天觉得还行' },
+  { role:'跟风党', open:'看到好多人推荐就买了', ask:'没让人失望' },
+];
+
+// === 场景库 ===
+function pickScenario(info, analysis) {
+  const { isProjector, isTV } = analysis;
+  const { features } = info;
+  const featStr = features.map(f=>f.toLowerCase()).join(' ');
+
+  const scenarios = [];
+
+  if (isProjector) {
+    scenarios.push(
+      { s:'晚上关灯看', detail:'投白墙效果出乎意料的好' },
+      { s:'白天拉上窗帘', detail:'亮度够用了 不用全黑' },
+      { s:'卧室躺着看天花板', detail:'云台直接对着天花板投' },
+      { s:'周末连看三部电影', detail:'眼睛不累 比电视舒服' },
+      { s:'朋友来家里一起看球', detail:'大屏就是爽' },
+      { s:'露营带出去用', detail:'便携确实方便' },
+    );
+  }
+  if (isTV) {
+    scenarios.push(
+      { s:'接PS5/Switch打游戏', detail:'延迟基本感觉不到' },
+      { s:'客厅当家庭影院', detail:'配上回音壁效果炸裂' },
+      { s:'老人看新闻/电视剧', detail:'操作简单他们也能用' },
+    );
+  }
+  if (/护眼|小孩|孩子/i.test(featStr)) {
+    scenarios.push({ s:'给娃看动画片', detail:'比看iPad/手机好太多' });
+  }
+
+  return scenarios.length > 0 ? rand(scenarios) : { s:'日常使用', detail:'整体满意' };
+}
+
+// === B站评论生成 — 基于真实评论区DNA ===
+// 核心原则：不套模板。每条评论有自己的"形状"——有的是一句话评价，有的是预算咨询，有的是空间参数提问。
+
+function generateBili(info, idx) {
+  const a = analyzeProduct(info);
+  a.persona = PERSONA_BILI[idx % PERSONA_BILI.length];
+
+  // === 多种评论格式，随机选 ===
+  // 如果产品标记为已购，优先分享型格式；未购优先咨询型
+  // 未购模式：禁止出现 "到家一周" "用了两周" 等分享型文案
+  // share 和 declare 权重在未购时为 0
+  const purchasedWeights = isPurchased
+    ? { declare: 0.25, share: 0.25, evaluate: 0.30, compare: 0.15, ask: 0.05 }
+    : { ask: 0.20, ask_budget: 0.20, ask_dimension: 0.18, ask_device: 0.12, compare: 0.18, evaluate: 0.12 };
+
+  const styleWeights = isPurchased ? purchasedWeights : { ask:0.20, ask_budget:0.20, ask_dimension:0.18, ask_device:0.12, compare:0.18, evaluate:0.12 };
+  const styles = Object.entries(styleWeights);
+  const totalW = styles.reduce((s,[,w])=>s+w, 0);
+  let roll = Math.random() * totalW;
+  let style = 'evaluate';
+  for (const [s, w] of styles) { roll -= w; if (roll <= 0) { style = s; break; } }
+
+  // 如果人设自带 style 但权重不匹配，覆盖
+  // 人设的 style 字段作为倾向，但最终格式是概率决定的
+
+  let text = '';
+
+  // === 格式分支 ===
+
+  if (style === 'declare') {
+    // 一句话权威评价型：「首发就这价 画质基本家用够了 还有不错的色彩 可以说是目前入门4k真香机」
+    const priceHint = info.price ? `${info.price}这个价` : '这价位';
+    const featSummary = a.hotPick + (a.hotPick2 ? `加上${a.hotPick2}` : '');
+    const competitorRef = info.competitor
+      ? `比${info.competitor}${rand(['强不少','实在多了','香多了'])}`
+      : '';
+    const node = rand(['618','双11','首发','现在']);
+    const verdict = rand([
+      `${node}${priceHint} ${featSummary} ${a.priceSegment}可以说是真香机了 ${competitorRef}`,
+      `${priceHint}有${featSummary} ${rand(['基本家用够了','这个配置真不赖','还要什么自行车'])} ${rand(['可以说是目前入门最香的了','横向比了一圈没对手','冲就完事了'])}`,
+      `${featSummary} ${node}这价 ${rand(['别家同价位基本没有','性价比拉满了','闭眼入'])} ${competitorRef}`,
+      `${info.name} ${node}这波 ${featSummary} ${a.priceSegment} ${rand(['真的能打','没虚标','确实香'])} ${info.competitor?`${info.competitor}瞬间不香了`:''}`,
+    ]);
+
+    text = verdict.trim();
+  }
+
+  else if (style === 'ask_budget') {
+    // 预算咨询型：「1500左右和3000左右 有推荐不？主要是卧室接电脑和switch玩游戏 加上看看电影之类的」
+    const p = parseInt(info.price) || 0;
+    const low = Math.max(1000, Math.floor(p * 0.5 / 100) * 100);
+    const high = Math.ceil(p * 1.3 / 100) * 100;
+    const scene = pickScenario(info, a);
+    const device = rand([
+      '接电脑','接switch','接PS5','接笔记本','接iPad','接Apple TV',
+    ]);
+    const usage = rand([
+      `主要是${rand(['卧室','客厅','小房间'])}${device}${rand(['玩游戏','看剧','看电影'])} 加上${rand(['看看综艺','刷刷B站','偶尔投屏'])}之类的`,
+      `就是想${rand(['下班躺床上看','周末窝沙发看','睡前看一会儿'])} ${device}方便一点`,
+      `${scene.s} ${device} ${rand(['玩原神','打塞尔达','看番','看电影'])} 这个价位能行不`,
+      `${rand(['租房','自己的小房子','宿舍'])}${device} 预算有限 ${rand(['就想买个不用折腾的','画质差不多就可以'])}`,
+    ]);
+
+    text = rand([
+      `${low}左右和${high}左右 有推荐不？${usage}`,
+      `预算${low}-${high} ${usage} ${info.competitor?`看了${info.competitor}觉得怎么样`:'求真实推荐'}`,
+      `求问 ${low}到${high}这个区间 ${usage} 要求不高 ${rand(['能看就行','比电视强就可'])} 有什么推荐`,
+      `${usage} 大概${low}上下 ${rand(['别太贵','差不多就行'])} ${info.name}这个行吗`,
+    ]);
+  }
+
+  else if (style === 'ask_dimension') {
+    // 空间参数咨询型：「客厅3.2米间隔 想实现白天观影 目前性价比最高的是哪一款 软幕布可以考虑加装」
+    const room = rand(['客厅','卧室','小房间','书房']);
+    const dist = (2.5 + Math.random() * 3).toFixed(1);
+    const condition = rand([
+      '想实现白天观影',
+      '晚上看就行 白天拉窗帘也能看',
+      '光线一般 不是全黑',
+      '窗户比较大 白天比较亮',
+    ]);
+    const screen = rand([
+      '软幕布可以考虑加装','白墙直接投','准备搞个幕布','电动幕布在看了','幕布还没选好',
+    ]);
+    const focus = rand([
+      `目前性价比最高的是哪一款`,
+      `${info.name}投${dist}米效果咋样`,
+      `这个距离${info.competitor?`${info.competitor}和${info.name}`:info.name+'能行不'}`,
+    ]);
+
+    text = rand([
+      `${room}${dist}米间隔 ${condition} ${focus} ${screen}`,
+      `up大哥 ${room}${dist}米 ${condition} ${info.name}和${info.competitor||'同价位别家'}哪个更合适 ${screen}`,
+      `投${dist}米 ${condition} ${info.name}亮度够不够 ${screen}`,
+      `${room}间距大概${dist}米 ${condition} 有没有这个距离用过的兄弟说下效果`,
+    ]);
+  }
+
+  else if (style === 'ask_device') {
+    // 设备连接咨询型：「主要是卧室接电脑和switch玩游戏 加上看看电影之类的」
+    const device = rand(['电脑','switch','PS5','笔记本','机顶盒','Apple TV']);
+    const device2 = rand(['switch','PS5','电脑','iPad','手机投屏']);
+    const usage = rand(['玩游戏','看剧','看电影','看番','刷B站']);
+    const concern = rand([
+      `${info.competitor?`${info.competitor}和${info.name}哪款`:'哪款'}延迟低一点`,
+      `HDMI接${device}会不会有延迟`,
+      `接${device}打${rand(['原神','塞尔达','FIFA','黑神话'])} 体验怎么样`,
+      `主要是接${device}和${device2} ${usage} ${info.name}够用不`,
+    ]);
+
+    text = rand([
+      `${concern} ${rand(['有实测过的兄弟吗','求真实反馈','在线等'])}`,
+      `${concern} 预算${info.price||'不限'} ${a.priceSegment}就行`,
+      `主要是${rand(['卧室','客厅'])}接${device}和${device2} ${usage} ${info.name}行不行`,
+    ]);
+  }
+
+  else if (style === 'compare') {
+    // 精确型号对比型：「坚果n5s promax 极米rs30 pro 这两款价格差不多 up最推荐哪一款 我就下班在客厅看看电影」
+    const me = info.name;
+    const them = info.competitor || rand(['极米','坚果','当贝','小明']);
+    const priceLine = info.price && info.compPrice
+      ? `这两款价格差不多`
+      : rand(['价格差不太多','预算都能接受','不考虑价格的话']);
+    const useScene = rand([
+      `我就${rand(['下班在客厅看看电影','周末在家看看剧','卧室睡前看一会儿'])}`,
+      `主要给${rand(['爸妈','女朋友','老婆','自己'])}用 ${rand(['他们不太会调参数','越简单越好'])}`,
+      `要求不高 ${rand(['画质过得去就行','比电视强就可以','不用太专业'])}`,
+    ]);
+
+    text = rand([
+      `${me} ${them} ${priceLine} up最推荐哪一款 ${useScene}`,
+      `在${me}和${them}之间纠结 ${priceLine} ${useScene} 求真实建议`,
+      `${me}和${them}怎么选 ${a.hotPick}这个我比较看重 ${useScene}`,
+      `${me}的${a.keyDiff}和${them}的${info.compFeatures?rand(info.compFeatures):'参数'} 怎么取舍 ${useScene}`,
+    ]);
+  }
+
+  else if (style === 'share') {
+    // 已购分享型（带使用细节）：「用了两周 这个价位有4K和1300CVIA 晚上投白墙效果真不赖 整体满意」
+    const days = rand(['两周','一个月','半个多月','一周多','三天']);
+    const scene = pickScenario(info, a);
+    const detail = rand([
+      `${scene.s} ${scene.detail}`,
+      `到手就试了${rand(['投白墙','接switch','看4K片源'])} ${rand(['效果比想象中好','没翻车','确实不错'])}`,
+      `${rand(['每天晚上都用','周末连看了三部电影','天天用'])} ${rand(['已经离不开了','后悔没早买','体验拉满'])}`,
+      `之前那台${rand(['亮度完全不够','晚上都糊','声音太小了'])} 换了${info.name} ${rand(['这才叫投影','差距太明显','真不是一个级别'])}`,
+    ]);
+
+    text = rand([
+      `用了${days} 说说感受 ${a.hotPick}确实不错 ${detail} ${info.competitor?`对比${info.competitor}选对了`:'没选错'}`,
+      `${info.name}到家${days} ${detail} ${a.hotPick2?`${a.hotPick2}也很实用`:'整体满意'}`,
+      `${info.price?info.price+'入的':'之前买的'} 用了${days} ${detail} ${rand(['可以放心冲','没什么槽点','建议去线下看看再决定'])}`,
+      `${detail} ${a.weakness?`唯一的槽点${a.weakness.replace('纠结','就是').replace('要考虑','')}`:'目前没发现什么问题'} ${rand(['早买早享受','整体很满意'])}`,
+    ]);
+  }
+
+  else if (style === 'evaluate') {
+    // 深度评价型（参数+体验+对比+结论融合在一段话里）
+    const duration = isPurchased ? `用了${rand(['两周','一个月','半个多月','一周'])} ` : '';
+    const featLine = `${a.hotPick}` + (a.hotPick2 ? `和${a.hotPick2}` : '');
+    const competitorRef = info.competitor
+      ? rand([
+          `比${info.competitor}${rand(['强','实在','香'])}`,
+          `${info.competitor}同价位${rand(['没有这配置','少了这个','缩水不少'])}`,
+          `${info.competitor}看了下 ${rand(['果断放弃了','没这个实用','阉割太狠'])}`,
+        ])
+      : '';
+    const scene = pickScenario(info, a);
+    const conclusion = isPurchased
+      ? rand(['整体满意','没选错','可以入','不后悔','这波不亏'])
+      : rand(['看着挺香','准备冲','大概率选这个了','等发工资就下手','再看看 不过倾向这个']);
+
+    text = rand([
+      `${duration}${featLine} ${a.priceSegment} ${rand(['这个价位能给的确实不多','横向看了下确实能打','参数没虚标'])} ${scene.s} ${scene.detail} ${competitorRef} ${conclusion}`,
+      `${duration}说下${featLine}的真实感受 ${rand(['不像有些牌子参数看着高实际拉胯','不是参数党 但用起来确实不一样'])} ${scene.detail} ${competitorRef} ${conclusion}`,
+      `${featLine} ${duration}${rand(['实测没翻车','基本达到预期','比想象的好'])} ${a.weakness?`但${a.weakness} 能接受的话`:''} ${competitorRef} ${conclusion}`,
+      `冲的就是${featLine} ${info.competitor?`${info.competitor}那边缩水了`:'别家都给不了'} ${scene.detail} ${isPurchased?'':'观望中 大概率冲'}`,
+      `${duration}${info.price?info.price+'这个价':'这价格'} ${featLine} ${rand(['还要什么自行车','闭眼入了','对比一圈还是这个'])} ${competitorRef}`,
+    ]);
+
+    if (!isPurchased && !text.includes('？') && Math.random() > 0.3) {
+      text += ' ' + rand(['有没有到手的兄弟说下','到手的兄弟实测一下','在线等一个真实评价']);
+    }
+  }
+
+  else {
+    // ask (default) — 简短提问
+    text = rand([
+      `${info.name} ${a.hotPick}怎么样 ${rand(['有没有用过的兄弟','到手的说说','求真实评价'])}`,
+      `有没有懂哥 ${info.name}的${a.hotPick}什么水平 ${info.competitor?`和${info.competitor}比呢`:''}`,
+      `${info.name}值得冲吗 ${a.hotPick}看着挺心动 ${info.competitor?`目前纠结${info.competitor}`:''}`,
+    ]);
+  }
+
+  // === 语调微调 ===
+  if (isCasual()) {
+    text = text.replace(/确实/g,'真的');
+    if (Math.random()>0.5 && !text.includes('doge') && !text.includes('？') && !text.includes('兄弟')) text += ' [doge]';
+    text = text.replace(/参数没虚标/g,'没虚标').replace(/性价比/g,'值不值');
+  }
+  if (isPro()) {
+    text = text.replace(/香麻了|太能打了|真的顶|绝了|真香/g,'参数到位');
+    text = text.replace(/闭眼入/g,'推荐入手');
+  }
+
+  return { text, name: rand(NAMES_BILI), color: AVATAR_COLORS[idx%AVATAR_COLORS.length],
+    likes: randInt(50,3200), hours: randInt(1,12), platform: 'bili' };
+}
+
+// 抖音组件
+const DY_OPEN_NOT = [
+  (p) => `刷到了 ${p.ask}`,
+  (p) => `${p.open} 这个看着行不行`,
+  () => '这个到底行不行 有没有踩坑的',
+];
+const DY_OPEN_YES = [
+  (p) => `${p.open}用了说句实话`,
+  () => `到手了 没翻车`,
+  (p) => `${p.open} 参数没虚标`,
+];
+const DY_INSIGHT = (info, a) => {
+  const s = pickScenario(info, a);
+  const sHint = s ? ` ${s.s}` : '';
+  return rand([
+    `${a.hotPick}在这个价位 ${rand(['香麻了','太能打了','真的顶'])}${sHint}`,
+    `${a.hotPick} ${rand(['闭眼入','看参数就知道','实测没翻车'])}`,
+    `就冲${a.hotPick}这一点 ${rand(['值了','够了','比我想的好'])}`,
+    `${a.hotPick}+${a.hotPick2} 这个配置 ${rand(['真卷','杀疯了','其他家别玩了'])}`,
+  ]);
+};
+const DY_CLOSE_NOT = (info) => rand([
+  info.price?`${info.price}冲不冲兄弟们`:'值不值？',
+  '已经下了 到货拍视频',
+  '评论区蹲一个真实用户',
+]);
+const DY_CLOSE_YES = (info) => rand([
+  '早买早享受',
+  '这波不亏',
+  '放心入 没什么坑',
+]);
+
+// 小红书组件
+const XHS_OPEN_NOT = [
+  (p) => `✨${p.open} 姐妹们帮我看看`,
+  (p) => `🔥种草好久了 ${p.ask}`,
+  (p) => `👀做了功课 ${p.ask}这个可以入吗`,
+];
+const XHS_OPEN_YES = [
+  (p) => `💕用了${rand(['两周','一个月'])}来repo ${p.ask}`,
+  (p) => `✨${p.open} 来分享下真实感受`,
+  () => `🎯真实用户反馈 ${rand(['不是广','自己买的','真诚分享'])}`,
+];
+const XHS_INSIGHT = (info, a) => {
+  const n = info.name;
+  return rand([
+    `${a.hotPick}这个体验 ${rand(['太加分了','提升幸福感','每天都在用'])} ${a.hotPick2?`配合${a.hotPick2}`:''} ${rand(['绝绝子','太舒服了','爱了爱了'])}`,
+    `对比了${info.competitor||'别家'} ${a.hotPick}确实是${n}的亮点 ${info.competitor?`${info.competitor}没有这个`:'其他家目前给不到'}`,
+    `${a.hotPick} ${rand(['真不是参数党','用起来才知道多香','解决了我最大的痛点'])} ${a.priceSegment}能有这个 真的可以`,
+  ]);
+};
+const XHS_CLOSE_NOT = (info) => rand([
+  info.price?`${info.price}值得冲吗姐妹们`:'家人们觉得值吗',
+  '有没有买过的姐妹给个建议 🥺',
+  '周末去线下看看再决定',
+]);
+const XHS_CLOSE_YES = (info) => rand([
+  '闭眼入没毛病 ✨',
+  '提升生活幸福感的好物 推荐！',
+  '之后继续分享使用感受~',
+]);
+
+// === 生成函数（组合式，用于抖音和小红书） ===
+function buildComment(openPool, insightFn, closePool, info, a, idx) {
+  const persona = a.persona;
+  const openIdx = idx % openPool.length;
+  const open = openPool[openIdx](persona);
+  const insight = insightFn(info, a);
+  const close = closePool[idx % closePool.length](info, a);
+
+  return [open, insight, close].join('。').replace(/。。/g,'。');
+}
+
+function generateDouyin(info, idx) {
+  const a = analyzeProduct(info);
+  a.persona = PERSONA_DOUYIN[idx % PERSONA_DOUYIN.length];
+
+  const openPool = isPurchased ? DY_OPEN_YES : DY_OPEN_NOT;
+  const closePool = isPurchased ? DY_CLOSE_YES : DY_CLOSE_NOT;
+
+  let text = buildComment(openPool, DY_INSIGHT, closePool, info, a, idx);
+
+  if (isCasual()) {
+    text = text.replace(/确实/g,'真的').replace(/配置/g,'东西');
+    if (!text.endsWith('！') && Math.random()>0.6) text += '！';
+  }
+  if (isPro()) {
+    text = text.replace(/香麻了|太能打了|真的顶|绝了/g,'参数能打');
+  }
+
+  return { text, name: rand(NAMES_DOUYIN), color: AVATAR_COLORS[idx%AVATAR_COLORS.length],
+    likes: randInt(20,5000), hours: randInt(1,8), platform: 'douyin' };
+}
+
+function generateXhs(info, idx) {
+  const a = analyzeProduct(info);
+  a.persona = PERSONA_XHS[idx % PERSONA_XHS.length];
+
+  const openPool = isPurchased ? XHS_OPEN_YES : XHS_OPEN_NOT;
+  const closePool = isPurchased ? XHS_CLOSE_YES : XHS_CLOSE_NOT;
+
+  let text = buildComment(openPool, XHS_INSIGHT, closePool, info, a, idx);
+
+  if (isCasual()) {
+    text = text.replace(/分享一下/g,'唠唠').replace(/体验/g,'感觉');
+  }
+  if (isPro()) {
+    text = text.replace(/绝绝子|爱了|种草|太舒服了/g,'参数到位');
+    if (Math.random()>0.5) text += ' 做了详细功课才选的';
+  }
+
+  return { text, name: rand(NAMES_XHS), color: AVATAR_COLORS[idx%AVATAR_COLORS.length],
+    likes: randInt(10,800), hours: randInt(1,24), platform: 'xhs' };
+}
+
+// === Render comments ===
+function renderComments() {
+  const area = document.getElementById('resultArea');
+  const renderers = { bili: renderBili, douyin: renderDouyin, xhs: renderXhs };
+  const badges = {
+    bili: '<div class="platform-badge badge-bili">📺 B站评论</div>',
+    douyin: '<div class="platform-badge badge-douyin">🎵 抖音评论</div>',
+    xhs: '<div class="platform-badge badge-xhs">📕 小红书评论</div>'
+  };
+  const statusTag = isPurchased
+    ? '<span style="font-size:11px;color:#10b981;margin-left:8px">✅ 已购 · 体验向</span>'
+    : '<span style="font-size:11px;color:#f59e0b;margin-left:8px">🔍 未购 · 决策向</span>';
+  const toneTag = '<span style="font-size:11px;color:#888;margin-left:4px">语调'+(isCasual()?'偏口语':isPro()?'偏专业':'适中')+'</span>';
+  area.innerHTML = badges[currentPlatform] + statusTag + toneTag + renderers[currentPlatform](currentComments);
+}
+
+function renderBili(comments) {
+  return comments.map(c => {
+    const escaped = c.text.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return `<div class="comment-card-wrap bili-comment">
+      <div class="bili-avatar" style="background:${c.color}">${c.name[0]}</div>
+      <div style="flex:1">
+        <div class="bili-name">${c.name}</div>
+        <div class="bili-text">${c.text}</div>
+        <div class="bili-meta">
+          <span>👍 ${c.likes>=1000?(c.likes/1000).toFixed(1)+'k':c.likes}</span>
+          <span>${c.hours}小时前</span>
+        </div>
+      </div>
+      <button class="copy-btn" onclick="copyOne(this,'${escaped}')">复制</button>
+    </div>`;
+  }).join('');
+}
+
+function renderDouyin(comments) {
+  return comments.map(c => {
+    const escaped = c.text.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return `<div class="comment-card-wrap douyin-comment">
+      <div class="douyin-avatar" style="background:${c.color}">${c.name[0]}</div>
+      <div class="douyin-body">
+        <div class="douyin-name">${c.name}</div>
+        <div class="douyin-text">${c.text}</div>
+        <div class="douyin-meta">
+          <span>${c.hours}小时前</span>
+          <span class="douyin-heart ${Math.random()>0.5?'liked':''}">♡ ${c.likes>=1000?(c.likes/1000).toFixed(1)+'k':c.likes}</span>
+        </div>
+      </div>
+      <button class="copy-btn" onclick="copyOne(this,'${escaped}')">复制</button>
+    </div>`;
+  }).join('');
+}
+
+function renderXhs(comments) {
+  return comments.map(c => {
+    const escaped = c.text.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return `<div class="comment-card-wrap xhs-comment">
+      <div class="xhs-header">
+        <div class="xhs-avatar" style="background:${c.color}">${c.name[0]}</div>
+        <div class="xhs-name">${c.name}</div>
+      </div>
+      <div class="xhs-text">${c.text}</div>
+      <div class="xhs-meta">
+        <span>${c.hours}小时前</span>
+        <span>♡ ${c.likes}</span>
+      </div>
+      <button class="copy-btn" onclick="copyOne(this,'${escaped}')">复制</button>
+    </div>`;
+  }).join('');
+}
+
+function copyOne(btn, text) {
+  navigator.clipboard.writeText(text).then(()=>showToast('已复制'));
+}
+function copyAll() {
+  const texts = currentComments.map(c => c.text).join('\n');
+  navigator.clipboard.writeText(texts).then(()=>showToast('已复制全部评论'));
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1500);
+}
+
+// Init
+renderProductChips();
+</script>
+</body>
+</html>
