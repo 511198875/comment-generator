@@ -921,10 +921,9 @@ function generateBili(info, idx) {
   }
 
   else if (style === 'ask_budget') {
-    // 预算咨询型：「1500左右和3000左右 有推荐不？主要是卧室接电脑和switch玩游戏 加上看看电影之类的」
+    // 预算咨询型：模拟真实用户千奇百怪的预算问法
     const p = parseInt(info.price) || 0;
-    const low = Math.max(1000, Math.floor(p * 0.5 / 100) * 100);
-    const high = Math.ceil(p * 1.3 / 100) * 100;
+    const k = Math.round(p / 1000);
     const scene = pickScenario(info, a);
     const device = rand([
       '接电脑','接switch','接PS5','接笔记本','接iPad','接Apple TV',
@@ -936,11 +935,37 @@ function generateBili(info, idx) {
       `${rand(['租房','自己的小房子','宿舍'])}${device} 预算有限 ${rand(['就想买个不用折腾的','画质差不多就可以'])}`,
     ]);
 
+    // 真实用户问预算的方式有N种，随机选
+    const r = Math.random();
+    let budgetStr;
+    if (r < 0.3) {
+      // 「1500左右和3500左右」— 两个价位对比
+      const a = Math.round(p * (0.4+Math.random()*0.4) / 100) * 100;
+      const b = Math.round(p * (0.8+Math.random()*0.7) / 100) * 100;
+      budgetStr = `${a}左右和${b}左右`;
+    } else if (r < 0.5) {
+      // 预算区间
+      const lo = Math.round(p * (0.3+Math.random()*0.4) / 100) * 100;
+      const hi = Math.round(p * (0.9+Math.random()*0.7) / 100) * 100;
+      budgetStr = `预算${lo}-${hi}`;
+    } else if (r < 0.7) {
+      // 模糊千元档 — 「两千多的」「三千左右」「两千价位」
+      budgetStr = rand([`${k-1}千多的`,`${k}千左右`,`${k}千上下`,`${k}千价位`,`不到${k+1}千的`]);
+    } else if (r < 0.85) {
+      // 具体一个数
+      const m = Math.round(p * (0.7+Math.random()*0.6) / 100) * 100;
+      budgetStr = `${m}以内`;
+    } else {
+      // 极简 — 「两千预算」
+      budgetStr = `${k}千预算`;
+    }
+
     text = rand([
-      `${low}左右和${high}左右 有推荐不？${usage}`,
-      `预算${low}-${high} ${usage} ${info.competitor?`看了${info.competitor}觉得怎么样`:'求真实推荐'}`,
-      `求问 ${low}到${high}这个区间 ${usage} 要求不高 ${rand(['能看就行','比电视强就可'])} 有什么推荐`,
-      `${usage} 大概${low}上下 ${rand(['别太贵','差不多就行'])} ${info.name}这个行吗`,
+      `${budgetStr} 有推荐不？${usage}`,
+      `${budgetStr} ${usage} ${info.competitor?`看了${info.competitor}觉得怎么样`:'求真实推荐'}`,
+      `${budgetStr} ${usage} 要求不高 ${rand(['能看就行','比电视强就可'])} ${rand(['有什么推荐','求推荐'])}`,
+      `${usage} ${budgetStr} ${rand(['别太贵','差不多就行','性价比高就行'])} ${info.name}这个行吗`,
+      `想买个${budgetStr}的 ${usage} ${rand(['大佬推荐下','求真实评价'])}`,
     ]);
   }
 
