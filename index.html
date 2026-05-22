@@ -185,6 +185,9 @@ h1{font-size:20px;font-weight:600}
     </div>
     <div class="header-actions">
       <button class="btn btn-outline" onclick="openModal()">⚙ 管理产品</button>
+      <button class="btn btn-outline" onclick="exportProducts()">📤 导出</button>
+      <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">📥 导入</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importProducts(event)">
     </div>
   </div>
 
@@ -284,6 +287,43 @@ function loadProducts() {
   catch(e) { return []; }
 }
 function saveProducts(products) { localStorage.setItem('comment_gen_products', JSON.stringify(products)); }
+
+function exportProducts() {
+  const data = loadProducts();
+  if (data.length === 0) { alert('没有产品可导出，请先添加产品'); return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'comment-gen-products.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importProducts(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('格式错误');
+      const current = loadProducts();
+      // Merge: overwrite by id, add new
+      const merged = [...current];
+      data.forEach(p => {
+        const idx = merged.findIndex(m => m.id === p.id);
+        if (idx >= 0) merged[idx] = p;
+        else merged.push(p);
+      });
+      saveProducts(merged);
+      renderProductChips();
+      alert(`导入完成！共 ${merged.length} 个产品`);
+    } catch(err) {
+      alert('导入失败：文件格式不正确');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
 
 // === Find product ===
 function findProduct(id) {
